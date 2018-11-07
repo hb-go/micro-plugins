@@ -65,6 +65,8 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 		}
 		r.Body.Close()
 
+		// TODO go-api支持
+
 		// Unmarshal request
 		if len(b) > 0 {
 			if err := codec.Unmarshal(b, argv.Interface()); err != nil {
