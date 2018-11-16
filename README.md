@@ -5,8 +5,8 @@
 - server/istio_http
 
 > TODO
-- Server/Service address定义
-- 支持server.HandlerOption定义API
+- FQDN Server/Service address定义
+- 支持server.HandlerOption定义api.Endpoint
 - 支持stream
 
 ```go
