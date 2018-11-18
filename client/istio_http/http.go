@@ -122,7 +122,7 @@ func (h *httpClient) call(ctx context.Context, address string, req client.Reques
 	
 	// unmarshal
 	if err := cf.Unmarshal(b, rsp); err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", string(b)+ err.Error())
 	}
 	
 	return nil

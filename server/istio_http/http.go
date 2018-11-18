@@ -55,16 +55,20 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 		}
 		codec, err := h.newHTTPCodec(ct)
 		if err != nil {
+			er := errors.InternalServerError("go.micro.server", err.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(er.Error()))
 			return
 		}
 
 		// marshal request
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			er := errors.InternalServerError("go.micro.server", err.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(er.Error()))
 			return
 		}
 		r.Body.Close()
@@ -74,8 +78,10 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 		// Unmarshal request
 		if len(b) > 0 {
 			if err := codec.Unmarshal(b, argv.Interface()); err != nil {
+				er := errors.InternalServerError("go.micro.server", err.Error())
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				w.Write([]byte(er.Error()))
 				return
 			}
 		}
@@ -119,16 +125,24 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 
 		// execute the handler
 		if appErr := fn(ctx, hr, replyv.Interface()); appErr != nil {
+			er := errors.InternalServerError("go.micro.server", appErr.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(appErr.Error()))
+			w.Write([]byte(er.Error()))
 			return
 		}
 
 		rsp, err := codec.Marshal(replyv.Interface())
 		if err != nil {
+			er := errors.InternalServerError("go.micro.server", err.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(er.Error()))
 			return
+		}
+
+		if len(w.Header().Get("Content-Type")) == 0 {
+			w.Header().Set("Content-Type", "application/json")
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -141,7 +155,7 @@ func (h *httpServer) apiHandler(service *service, mtype *methodType) (http.Handl
 		log.Logf("handle request path:%v", r.URL.Path)
 		req, err := requestToProto(r)
 		if err != nil {
-			er := errors.InternalServerError("go.micro.api", err.Error())
+			er := errors.InternalServerError("go.micro.server", err.Error())
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(500)
 			w.Write([]byte(er.Error()))
@@ -157,8 +171,10 @@ func (h *httpServer) apiHandler(service *service, mtype *methodType) (http.Handl
 		}
 		codec, err := h.newHTTPCodec(ct)
 		if err != nil {
+			er := errors.InternalServerError("go.micro.server", err.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(er.Error()))
 			return
 		}
 
@@ -197,16 +213,24 @@ func (h *httpServer) apiHandler(service *service, mtype *methodType) (http.Handl
 
 		// execute the handler
 		if appErr := fn(ctx, hr, replyv.Interface()); appErr != nil {
+			er := errors.InternalServerError("go.micro.server", appErr.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(appErr.Error()))
+			w.Write([]byte(er.Error()))
 			return
 		}
 
 		rsp, err := codec.Marshal(replyv.Interface())
 		if err != nil {
+			er := errors.InternalServerError("go.micro.server", err.Error())
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(er.Error()))
 			return
+		}
+
+		if len(w.Header().Get("Content-Type")) == 0 {
+			w.Header().Set("Content-Type", "application/json")
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -322,19 +346,19 @@ func (h *httpServer) Start() error {
 					}
 				}
 			}
-		}
+		} else {
+			for mn, mt := range service.method {
+				if mt.stream {
+					// TODO stream支持
+					continue
+				}
+				handler, err := h.handler(service, mt)
+				if err != nil {
+					return err
+				}
 
-		for mn, mt := range service.method {
-			if mt.stream {
-				// TODO stream支持
-				continue
+				r.HandleFunc("/"+service.name+"."+mn, handler)
 			}
-			handler, err := h.handler(service, mt)
-			if err != nil {
-				return err
-			}
-
-			r.HandleFunc("/"+service.name+"."+mn, handler)
 		}
 	}
 
