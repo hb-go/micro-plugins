@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/cmd"
-	mapi "github.com/micro/go-api"
+	api "github.com/micro/go-api"
 	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/server"
 )
@@ -300,10 +300,10 @@ func (h *httpServer) Start() error {
 			// micro api
 			handler := h.handlers[service.name]
 			for _, v := range handler.Options().Metadata {
-				if e := mapi.Decode(v); e == nil {
+				if e := api.Decode(v); e == nil {
 					continue
 				} else {
-					if sm := strings.Split(e.Name, "."); len(sm) == 2 && e.Handler == mapi.Api {
+					if sm := strings.Split(e.Name, "."); len(sm) == 2 && e.Handler == api.Api {
 						mn := sm[1]
 						mt := service.method[mn]
 						if mt.stream {
