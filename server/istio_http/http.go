@@ -8,17 +8,21 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"strings"
 	"sync"
-	
+
+	"github.com/gorilla/mux"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/cmd"
-	errors "github.com/micro/go-micro/errors"
+	mapi "github.com/micro/go-api"
+	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/server"
 )
 
 type httpServer struct {
-	rpc *rServer
-	
+	api    bool
+	server *hServer
+
 	sync.Mutex
 	opts     server.Options
 	handlers map[string]server.Handler
@@ -32,9 +36,9 @@ func init() {
 func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerFunc, error) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Logf("handle request path:%v", r.URL.Path)
-		
+
 		var argv, replyv reflect.Value
-		
+
 		// Decode the argument value.
 		argIsValue := false // if true, need to indirect before calling.
 		if mtype.ArgType.Kind() == reflect.Ptr {
@@ -43,7 +47,7 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 			argv = reflect.New(mtype.ArgType)
 			argIsValue = true
 		}
-		
+
 		// get codec
 		ct := r.Header.Get("Content-Type")
 		if len(ct) == 0 {
@@ -55,7 +59,7 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 			w.Write([]byte(err.Error()))
 			return
 		}
-		
+
 		// marshal request
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -64,9 +68,9 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 			return
 		}
 		r.Body.Close()
-		
+
 		// TODO 支持go-api的api.Request
-		
+
 		// Unmarshal request
 		if len(b) > 0 {
 			if err := codec.Unmarshal(b, argv.Interface()); err != nil {
@@ -75,17 +79,17 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 				return
 			}
 		}
-		
+
 		if argIsValue {
 			argv = argv.Elem()
 		}
-		
+
 		// reply value
 		replyv = reflect.New(mtype.ReplyType.Elem())
-		
+
 		function := mtype.method.Func
 		var returnValues []reflect.Value
-		
+
 		// create a client.Request
 		hr := &httpRequest{
 			service:     h.opts.Name,
@@ -93,40 +97,118 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 			method:      fmt.Sprintf("%s.%s", service.name, mtype.method.Name),
 			request:     argv.Interface(),
 		}
-		
+
 		ctx := context.Background()
-		
+
 		// define the handler func
 		fn := func(ctx context.Context, req server.Request, rsp interface{}) error {
 			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Request()), reflect.ValueOf(rsp)})
-			
+
 			// The return value for the method is an error.
 			if err := returnValues[0].Interface(); err != nil {
 				return err.(error)
 			}
-			
+
 			return nil
 		}
-		
+
 		// wrap the handler func
 		for i := len(h.opts.HdlrWrappers); i > 0; i-- {
 			fn = h.opts.HdlrWrappers[i-1](fn)
 		}
-		
+
 		// execute the handler
 		if appErr := fn(ctx, hr, replyv.Interface()); appErr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(appErr.Error()))
 			return
 		}
-		
+
 		rsp, err := codec.Marshal(replyv.Interface())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
-		
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(rsp)
+	}, nil
+}
+
+func (h *httpServer) apiHandler(service *service, mtype *methodType) (http.HandlerFunc, error) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Logf("handle request path:%v", r.URL.Path)
+		req, err := requestToProto(r)
+		if err != nil {
+			er := errors.InternalServerError("go.micro.api", err.Error())
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			w.Write([]byte(er.Error()))
+			return
+		}
+
+		var replyv reflect.Value
+
+		// get codec
+		ct := r.Header.Get("Content-Type")
+		if len(ct) == 0 {
+			ct = "application/json"
+		}
+		codec, err := h.newHTTPCodec(ct)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		// reply value
+		replyv = reflect.New(mtype.ReplyType.Elem())
+
+		function := mtype.method.Func
+		var returnValues []reflect.Value
+
+		// create a client.Request
+		hr := &httpRequest{
+			service:     h.opts.Name,
+			contentType: ct,
+			method:      fmt.Sprintf("%s.%s", service.name, mtype.method.Name),
+			request:     req,
+		}
+
+		ctx := context.Background()
+
+		// define the handler func
+		fn := func(ctx context.Context, req server.Request, rsp interface{}) error {
+			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Request()), reflect.ValueOf(rsp)})
+
+			// The return value for the method is an error.
+			if err := returnValues[0].Interface(); err != nil {
+				return err.(error)
+			}
+
+			return nil
+		}
+
+		// wrap the handler func
+		for i := len(h.opts.HdlrWrappers); i > 0; i-- {
+			fn = h.opts.HdlrWrappers[i-1](fn)
+		}
+
+		// execute the handler
+		if appErr := fn(ctx, hr, replyv.Interface()); appErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(appErr.Error()))
+			return
+		}
+
+		rsp, err := codec.Marshal(replyv.Interface())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write(rsp)
 	}, nil
@@ -158,13 +240,13 @@ func (h *httpServer) Init(opts ...server.Option) error {
 func (h *httpServer) Handle(handler server.Handler) error {
 	h.Lock()
 	defer h.Unlock()
-	
-	if err := h.rpc.register(handler.Handler()); err != nil {
+
+	if err := h.server.register(handler.Handler()); err != nil {
 		return err
 	}
-	
+
 	h.handlers[handler.Name()] = handler
-	
+
 	return nil
 }
 
@@ -177,7 +259,7 @@ func (h *httpServer) NewSubscriber(topic string, handler interface{}, opts ...se
 	for _, o := range opts {
 		o(&options)
 	}
-	
+
 	return &httpSubscriber{
 		opts:  options,
 		topic: topic,
@@ -200,20 +282,48 @@ func (h *httpServer) Deregister() error {
 func (h *httpServer) Start() error {
 	h.Lock()
 	opts := h.opts
-	serviceMap := h.rpc.serviceMap
+	serviceMap := h.server.serviceMap
 	h.Unlock()
-	
+
 	ln, err := net.Listen("tcp", opts.Address)
 	if err != nil {
 		return err
 	}
-	
+
 	h.Lock()
 	h.opts.Address = ln.Addr().String()
 	h.Unlock()
-	
-	mux := http.NewServeMux()
+
+	r := mux.NewRouter()
 	for _, service := range serviceMap {
+		if h.api {
+			// micro api
+			handler := h.handlers[service.name]
+			for _, v := range handler.Options().Metadata {
+				if e := mapi.Decode(v); e == nil {
+					continue
+				} else {
+					if sm := strings.Split(e.Name, "."); len(sm) == 2 && e.Handler == mapi.Api {
+						mn := sm[1]
+						mt := service.method[mn]
+						if mt.stream {
+							// TODO stream支持
+							continue
+						}
+
+						handler, err := h.apiHandler(service, mt)
+						if err != nil {
+							return err
+						}
+
+						for _, path := range e.Path {
+							r.HandleFunc(path, handler).Methods(e.Method...)
+						}
+					}
+				}
+			}
+		}
+
 		for mn, mt := range service.method {
 			if mt.stream {
 				// TODO stream支持
@@ -223,21 +333,18 @@ func (h *httpServer) Start() error {
 			if err != nil {
 				return err
 			}
-			
-			mux.HandleFunc("/"+service.name+"."+mn, handler)
-			
-			// TODO 支持server.HandlerOption API
-			// api.WithEndpoint(&Endpoint{Name: "Greeter.Hello", Path: []string{"/greeter"}})
+
+			r.HandleFunc("/"+service.name+"."+mn, handler)
 		}
 	}
-	
-	go http.Serve(ln, mux)
-	
+
+	go http.Serve(ln, r)
+
 	go func() {
 		ch := <-h.exit
 		ch <- ln.Close()
 	}()
-	
+
 	return nil
 }
 
@@ -251,9 +358,10 @@ func (h *httpServer) String() string {
 	return "http"
 }
 
-func newServer(opts ...server.Option) server.Server {
+func newServer(api bool, opts ...server.Option) server.Server {
 	return &httpServer{
-		rpc: &rServer{
+		api: api,
+		server: &hServer{
 			serviceMap: make(map[string]*service),
 		},
 		opts:     newOptions(opts...),
@@ -263,5 +371,9 @@ func newServer(opts ...server.Option) server.Server {
 }
 
 func NewServer(opts ...server.Option) server.Server {
-	return newServer(opts...)
+	return newServer(false, opts...)
+}
+
+func NewApiServer(opts ...server.Option) server.Server {
+	return newServer(true, opts...)
 }

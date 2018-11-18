@@ -45,7 +45,7 @@ type service struct {
 }
 
 // server represents an RPC Server.
-type rServer struct {
+type hServer struct {
 	mu         sync.Mutex // protects the serviceMap
 	serviceMap map[string]*service
 }
@@ -136,7 +136,7 @@ func prepareMethod(method reflect.Method) *methodType {
 	return &methodType{method: method, ArgType: argType, ReplyType: replyType, ContextType: contextType, stream: stream}
 }
 
-func (server *rServer) register(rcvr interface{}) error {
+func (server *hServer) register(rcvr interface{}) error {
 	server.mu.Lock()
 	defer server.mu.Unlock()
 	if server.serviceMap == nil {
