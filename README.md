@@ -4,12 +4,15 @@
 - client/istio_http
 - server/istio_http
 
-> TODO
+### TODO
 - http
     - FQDN Server/Service address定义
-    - 支持server.HandlerOption定义api.Endpoint
     - 支持stream
 - gRPC
-    - ……
+    - Istio部署测试
+    - API service支持server.HandlerOption定义api.Endpoint
     
+### Attention
+- http broker依赖registry，所以不可用
+       
 ### [go-micro istio示例](https://github.com/hb-go/micro/tree/master/istio)
