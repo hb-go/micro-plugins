@@ -2,6 +2,8 @@ package http
 
 import (
 	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/codec"
+	"github.com/micro/go-micro/server"
 )
 
 type httpRequest struct {
@@ -12,7 +14,7 @@ type httpRequest struct {
 	opts        client.RequestOptions
 }
 
-func newHTTPRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) client.Request {
+func newHTTPRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) server.Request {
 	var opts client.RequestOptions
 	for _, o := range reqOpts {
 		o(&opts)
@@ -43,10 +45,26 @@ func (h *httpRequest) Method() string {
 	return h.method
 }
 
-func (h *httpRequest) Request() interface{} {
+func (h *httpRequest) Endpoint() string {
+	return h.method
+}
+
+func (h *httpRequest) Codec() codec.Reader {
+	return nil
+}
+
+func (h *httpRequest) Body() interface{} {
 	return h.request
 }
 
 func (h *httpRequest) Stream() bool {
 	return h.opts.Stream
+}
+
+func (h *httpRequest) Header() map[string]string {
+	return nil
+}
+
+func (h *httpRequest) Read() ([]byte, error) {
+	return nil, nil
 }

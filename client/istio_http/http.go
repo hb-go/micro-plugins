@@ -66,7 +66,12 @@ func (h *httpClient) next(request client.Request, opts client.CallOptions) (sele
 	return nil, errors.InternalServerError("go.micro.client", "TODO service address")
 }
 
-func (h *httpClient) call(ctx context.Context, address string, req client.Request, rsp interface{}, opts client.CallOptions) error {
+func (h *httpClient) call(ctx context.Context, node *registry.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
+	// set the address
+	address := node.Address
+	if node.Port > 0 {
+		address = fmt.Sprintf("%s:%d", address, node.Port)
+	}
 
 	// get codec
 	cf, err := h.newHTTPCodec(req.ContentType())
@@ -75,7 +80,7 @@ func (h *httpClient) call(ctx context.Context, address string, req client.Reques
 	}
 
 	// marshal request
-	b, err := cf.Marshal(req.Request())
+	b, err := cf.Marshal(req.Body())
 	if err != nil {
 		return errors.InternalServerError("go.micro.client", err.Error())
 	}
@@ -250,14 +255,8 @@ func (h *httpClient) Call(ctx context.Context, req client.Request, rsp interface
 			return errors.InternalServerError("go.micro.client", err.Error())
 		}
 
-		// set the address
-		addr := node.Address
-		if node.Port > 0 {
-			addr = fmt.Sprintf("%s:%d", addr, node.Port)
-		}
-
 		// make the call
-		err = hcall(ctx, addr, req, rsp, callOpts)
+		err = hcall(ctx, node, req, rsp, callOpts)
 		return err
 	}
 

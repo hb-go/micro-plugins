@@ -12,9 +12,10 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/micro/go-api"
+	ha "github.com/micro/go-api/handler/api"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/cmd"
-	api "github.com/micro/go-api"
 	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/server"
 )
@@ -108,7 +109,7 @@ func (h *httpServer) handler(service *service, mtype *methodType) (http.HandlerF
 
 		// define the handler func
 		fn := func(ctx context.Context, req server.Request, rsp interface{}) error {
-			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Request()), reflect.ValueOf(rsp)})
+			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Body()), reflect.ValueOf(rsp)})
 
 			// The return value for the method is an error.
 			if err := returnValues[0].Interface(); err != nil {
@@ -196,7 +197,7 @@ func (h *httpServer) apiHandler(service *service, mtype *methodType) (http.Handl
 
 		// define the handler func
 		fn := func(ctx context.Context, req server.Request, rsp interface{}) error {
-			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Request()), reflect.ValueOf(rsp)})
+			returnValues = function.Call([]reflect.Value{service.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(req.Body()), reflect.ValueOf(rsp)})
 
 			// The return value for the method is an error.
 			if err := returnValues[0].Interface(); err != nil {
@@ -327,7 +328,7 @@ func (h *httpServer) Start() error {
 				if e := api.Decode(v); e == nil {
 					continue
 				} else {
-					if sm := strings.Split(e.Name, "."); len(sm) == 2 && e.Handler == api.Api {
+					if sm := strings.Split(e.Name, "."); len(sm) == 2 && e.Handler == ha.Handler {
 						mn := sm[1]
 						mt := service.method[mn]
 						if mt.stream {

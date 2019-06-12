@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/codec"
 )
 
 type httpRequest struct {
@@ -43,7 +44,15 @@ func (h *httpRequest) Method() string {
 	return h.method
 }
 
-func (h *httpRequest) Request() interface{} {
+func (h *httpRequest) Endpoint() string {
+	return h.method
+}
+
+func (h *httpRequest) Codec() codec.Writer {
+	return nil
+}
+
+func (h *httpRequest) Body() interface{} {
 	return h.request
 }
 

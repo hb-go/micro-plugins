@@ -50,6 +50,10 @@ func (h *httpStream) Request() client.Request {
 	return h.request
 }
 
+func (h *httpStream) Response() client.Response {
+	return nil
+}
+
 func (h *httpStream) Send(msg interface{}) error {
 	h.Lock()
 	defer h.Unlock()
