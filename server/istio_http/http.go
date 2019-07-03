@@ -13,8 +13,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/micro/go-api"
-	ha "github.com/micro/go-api/handler/api"
 	"github.com/micro/go-log"
+	ha "github.com/micro/go-micro/api/handler/api"
 	"github.com/micro/go-micro/config/cmd"
 	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/server"
