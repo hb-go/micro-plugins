@@ -7,18 +7,19 @@ import (
 	"crypto/tls"
 	errs "errors"
 	"fmt"
+	"github.com/micro/go-log"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-micro/client"
-	"github.com/micro/go-micro/cmd"
+	"github.com/micro/go-micro/client/selector"
 	"github.com/micro/go-micro/codec"
-	errors "github.com/micro/go-micro/errors"
+	"github.com/micro/go-micro/config/cmd"
+	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/metadata"
 	"github.com/micro/go-micro/registry"
-	"github.com/micro/go-micro/selector"
 	"github.com/micro/go-micro/transport"
 
 	"google.golang.org/grpc"
@@ -80,7 +81,13 @@ func (g *grpcClient) node(request client.Request, opts client.CallOptions) (*reg
 	return nil, errors.InternalServerError("go.micro.client", "TODO service address")
 }
 
-func (g *grpcClient) call(ctx context.Context, address string, req client.Request, rsp interface{}, opts client.CallOptions) error {
+func (g *grpcClient) call(ctx context.Context, node *registry.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
+	// set the address
+	address := node.Address
+	if node.Port > 0 {
+		address = fmt.Sprintf("%s:%d", address, node.Port)
+	}
+
 	header := make(map[string]string)
 	if md, ok := metadata.FromContext(ctx); ok {
 		for k, v := range md {
@@ -115,14 +122,17 @@ func (g *grpcClient) call(ctx context.Context, address string, req client.Reques
 	ch := make(chan error, 1)
 
 	go func() {
-		err := grpc.Invoke(ctx, methodToGRPC(req.Method(), req.Request()), req.Request(), rsp, cc.cc)
+		err := grpc.Invoke(ctx, methodToGRPC(req.Method(), req.Body()), req.Body(), rsp, cc.cc)
+		log.Logf("grpc address: %s, err: %v", address, err)
 		ch <- microError(err)
 	}()
 
 	select {
 	case err := <-ch:
+		log.Logf("a")
 		grr = err
 	case <-ctx.Done():
+		log.Logf("b")
 		grr = ctx.Err()
 	}
 
@@ -161,7 +171,7 @@ func (g *grpcClient) stream(ctx context.Context, address string, req client.Requ
 		ServerStreams: true,
 	}
 
-	st, err := grpc.NewClientStream(ctx, desc, cc, methodToGRPC(req.Method(), req.Request()))
+	st, err := grpc.NewClientStream(ctx, desc, cc, methodToGRPC(req.Method(), req.Body()))
 	if err != nil {
 		return nil, errors.InternalServerError("go.micro.client", fmt.Sprintf("Error creating stream: %v", err))
 	}
@@ -233,6 +243,7 @@ func (g *grpcClient) NewRequest(service, method string, req interface{}, reqOpts
 }
 
 func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
+	log.Logf("c")
 	// make a copy of call opts
 	callOpts := g.opts.CallOptions
 	for _, opt := range opts {
@@ -280,14 +291,8 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 			return errors.InternalServerError("go.micro.client", err.Error())
 		}
 
-		// set the address
-		addr := node.Address
-		if node.Port > 0 {
-			addr = fmt.Sprintf("%s:%d", addr, node.Port)
-		}
-
 		// make the call
-		err = gcall(ctx, addr, req, rsp, callOpts)
+		err = gcall(ctx, node, req, rsp, callOpts)
 		g.opts.Selector.Mark(req.Service(), node, err)
 		return err
 	}

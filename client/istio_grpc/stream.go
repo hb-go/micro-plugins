@@ -39,6 +39,10 @@ func (g *grpcStream) Request() client.Request {
 	return g.request
 }
 
+func (g *grpcStream) Response() client.Response {
+	return nil
+}
+
 func (g *grpcStream) Send(msg interface{}) error {
 	g.Lock()
 	defer g.Unlock()
