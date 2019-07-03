@@ -21,7 +21,7 @@ import (
 	"github.com/micro/go-micro/errors"
 	meta "github.com/micro/go-micro/metadata"
 	"github.com/micro/go-micro/server"
-	mgrpc "github.com/micro/util/go/lib/grpc"
+	mgrpc "github.com/micro/go-micro/util/go/lib/grpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
