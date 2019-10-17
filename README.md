@@ -1,14 +1,16 @@
 ## go-mciro plugins
 
-将go-micro服务加入service mesh，Client、Server不需要Registry、Selector、Transport等
-- client/istio_http
-- server/istio_http
+- `JWT`+`Casbin`权限验证
+	- micro/auth
+- Istio Http 插件，将go-micro服务加入service mesh，Client、Server不需要Registry、Selector、Transport等
+	- client/istio_http
+	- server/istio_http	
 
 ### TODO
-- http
+- Istio Http
     - FQDN Server/Service address定义
     - 支持stream
-- gRPC
+- Istio gRPC
     - Istio部署测试
     - API service支持server.HandlerOption定义api.Endpoint
     
