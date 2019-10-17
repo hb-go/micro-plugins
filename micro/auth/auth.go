@@ -96,7 +96,7 @@ func (a *Auth) handler(h http.Handler) http.Handler {
 		}
 
 		if !token.Valid {
-			a.response(w, r, errors.Forbidden(id, "JWT token invalid"))
+			a.response(w, r, errors.Unauthorized(id, "JWT token invalid"))
 			return
 		}
 
