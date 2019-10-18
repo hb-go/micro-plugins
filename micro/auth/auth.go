@@ -87,7 +87,7 @@ func (a *Auth) handler(h http.Handler) http.Handler {
 			r,
 			request.AuthorizationHeaderExtractor,
 			a.keyFunc,
-			request.WithClaims(jwt.StandardClaims{}),
+			request.WithClaims(&jwt.StandardClaims{}),
 		)
 
 		if err != nil || token == nil {
@@ -100,13 +100,8 @@ func (a *Auth) handler(h http.Handler) http.Handler {
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.StandardClaims)
-		if !ok {
-			a.response(w, r, errors.InternalServerError(id, "JWT token claims convert to jwt.StandardClaims failed"))
-			return
-		}
-
 		// 访问控制
+		claims := token.Claims.(*jwt.StandardClaims)
 		if allowed, err := a.enforcer.Enforce(claims.Id, path, method); err != nil {
 			a.response(w, r, errors.InternalServerError(id, err.Error()))
 			return
