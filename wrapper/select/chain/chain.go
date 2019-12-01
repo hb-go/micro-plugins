@@ -32,6 +32,7 @@ func (w *chainWrapper) filterChain(chains []string) selector.Filter {
 		var services []*registry.Service
 
 		chain := ""
+		idx := 0
 		for _, service := range old {
 			serv := new(registry.Service)
 			var nodes []*registry.Node
@@ -42,7 +43,27 @@ func (w *chainWrapper) filterChain(chains []string) selector.Filter {
 				}
 
 				val := node.Metadata[w.opts.labelKey]
-				if len(val) > 0 && (chain == val || inArray(val, chains)) {
+				if len(val) == 0 {
+					continue
+				}
+
+				if len(chain) > 0 && idx == 0 {
+					if chain == val {
+						nodes = append(nodes, node)
+					}
+					continue
+				}
+
+				// chains按顺序优先匹配
+				ok, i := inArray(val, chains)
+				if ok && idx > i {
+					// 出现优先链路，services清空，nodes清空
+					idx = i
+					services = services[:0]
+					nodes = nodes[:0]
+				}
+
+				if ok {
 					chain = val
 					nodes = append(nodes, node)
 				}
@@ -65,13 +86,13 @@ func (w *chainWrapper) filterChain(chains []string) selector.Filter {
 	}
 }
 
-func inArray(s string, d []string) bool {
-	for _, v := range d {
+func inArray(s string, d []string) (bool, int) {
+	for k, v := range d {
 		if s == v {
-			return true
+			return true, k
 		}
 	}
-	return false
+	return false, 0
 }
 
 func NewClientWrapper(opts ...Option) client.Wrapper {
