@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/hb-go/micro-plugins/web"
-	"github.com/micro/go-micro/api"
-	"github.com/micro/go-micro/util/log"
+	"github.com/micro/go-micro/v2/api"
+	"github.com/micro/go-micro/v2/util/log"
 )
 
 func main() {

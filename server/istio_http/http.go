@@ -12,12 +12,12 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"github.com/micro/go-micro/api"
-	"github.com/micro/go-log"
-	ha "github.com/micro/go-micro/api/handler/api"
-	"github.com/micro/go-micro/config/cmd"
-	"github.com/micro/go-micro/errors"
-	"github.com/micro/go-micro/server"
+	"github.com/micro/go-micro/v2/api"
+	ha "github.com/micro/go-micro/v2/api/handler/api"
+	"github.com/micro/go-micro/v2/config/cmd"
+	"github.com/micro/go-micro/v2/errors"
+	"github.com/micro/go-micro/v2/server"
+	"github.com/micro/go-micro/v2/util/log"
 )
 
 type httpServer struct {

@@ -14,15 +14,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/micro/cli"
-	"github.com/micro/go-micro"
-	"github.com/micro/go-micro/api"
-	"github.com/micro/go-micro/registry"
-	maddr "github.com/micro/go-micro/util/addr"
-	mhttp "github.com/micro/go-micro/util/http"
-	"github.com/micro/go-micro/util/log"
-	mnet "github.com/micro/go-micro/util/net"
-	mls "github.com/micro/go-micro/util/tls"
+	"github.com/micro/cli/v2"
+	"github.com/micro/go-micro/v2"
+	"github.com/micro/go-micro/v2/api"
+	"github.com/micro/go-micro/v2/registry"
+	maddr "github.com/micro/go-micro/v2/util/addr"
+	mhttp "github.com/micro/go-micro/v2/util/http"
+	"github.com/micro/go-micro/v2/util/log"
+	mnet "github.com/micro/go-micro/v2/util/net"
+	mls "github.com/micro/go-micro/v2/util/tls"
 )
 
 type service struct {
@@ -341,7 +341,7 @@ func (s *service) Init(opts ...Option) error {
 		serviceOpts = append(serviceOpts, micro.Registry(s.opts.Registry))
 	}
 
-	serviceOpts = append(serviceOpts, micro.Action(func(ctx *cli.Context) {
+	serviceOpts = append(serviceOpts, micro.Action(func(ctx *cli.Context) error {
 		if ttl := ctx.Int("register_ttl"); ttl > 0 {
 			s.opts.RegisterTTL = time.Duration(ttl) * time.Second
 		}
@@ -373,6 +373,8 @@ func (s *service) Init(opts ...Option) error {
 		if s.opts.Action != nil {
 			s.opts.Action(ctx)
 		}
+
+		return nil
 	}))
 
 	s.opts.Service.Init(serviceOpts...)

@@ -10,10 +10,11 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.9.5 // indirect
-	github.com/micro/cli v0.2.0
+	github.com/micro/cli/v2 v2.1.1
 	github.com/micro/go-log v0.1.0
-	github.com/micro/go-micro v1.18.0
-	github.com/micro/go-plugins v1.5.1
-	github.com/micro/micro v1.18.0
+	github.com/micro/go-micro/v2 v2.0.0
+	github.com/micro/micro/v2 v2.0.0
+	github.com/prometheus/client_golang v1.2.1 // indirect
 	github.com/rs/cors v1.7.0
+	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
