@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hb-go/micro-plugins/web"
+	"github.com/hb-go/micro-plugins/v2/web"
 	"github.com/micro/go-micro/v2/api"
 	"github.com/micro/go-micro/v2/util/log"
 )

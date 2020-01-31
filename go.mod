@@ -1,4 +1,4 @@
-module github.com/hb-go/micro-plugins
+module github.com/hb-go/micro-plugins/v2
 
 go 1.13
 
