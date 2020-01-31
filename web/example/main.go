@@ -7,7 +7,6 @@ import (
 	"github.com/hb-go/micro-plugins/web"
 	"github.com/micro/go-micro/api"
 	"github.com/micro/go-micro/util/log"
-	_ "github.com/micro/go-plugins/transport/tcp"
 )
 
 func main() {
@@ -24,8 +23,8 @@ func main() {
 
 	service.Handle("/console/", &handler{}, &api.Endpoint{
 		Name:    "console",
-		Host:    []string{"hbchen.com", "localhost:8080"},
-		Path:    []string{"/console/*"},
+		Host:    []string{"localhost:8080"},
+		Path:    []string{"^/console"},
 		Method:  []string{"POST", "GET", "DELETE"},
 		Handler: "proxy",
 	})

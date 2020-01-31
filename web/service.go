@@ -276,7 +276,7 @@ func (s *service) Handle(pattern string, handler http.Handler, endpoints ...*api
 		if len(endpoints) > 0 {
 			for _, e := range endpoints {
 				s.srv.Endpoints = append(s.srv.Endpoints, &registry.Endpoint{
-					Name:     e.Name,
+					Name:     pattern,
 					Metadata: api.Encode(e),
 				})
 			}
@@ -311,7 +311,7 @@ func (s *service) HandleFunc(pattern string, handler func(http.ResponseWriter, *
 		if len(endpoints) > 0 {
 			for _, e := range endpoints {
 				s.srv.Endpoints = append(s.srv.Endpoints, &registry.Endpoint{
-					Name:     e.Name,
+					Name:     pattern,
 					Metadata: api.Encode(e),
 				})
 			}
