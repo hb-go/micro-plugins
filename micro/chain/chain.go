@@ -16,7 +16,7 @@ func (*chainPlugin) Flags() []cli.Flag {
 	return nil
 }
 
-func (*chainPlugin) Commands() []cli.Command {
+func (*chainPlugin) Commands() []*cli.Command {
 	return nil
 }
 
