@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hb-go/micro-plugins/v2/web"
-	"github.com/micro/go-micro/v2/api"
-	"github.com/micro/go-micro/v2/util/log"
+	"github.com/hb-go/micro-plugins/v3/web"
+	"github.com/micro/go-micro/v3/api"
+	"github.com/micro/go-micro/v3/util/log"
 )
 
 func main() {

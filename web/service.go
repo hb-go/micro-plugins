@@ -15,14 +15,14 @@ import (
 	"time"
 
 	"github.com/micro/cli/v2"
-	"github.com/micro/go-micro/v2"
-	"github.com/micro/go-micro/v2/api"
-	"github.com/micro/go-micro/v2/registry"
-	maddr "github.com/micro/go-micro/v2/util/addr"
-	mhttp "github.com/micro/go-micro/v2/util/http"
-	"github.com/micro/go-micro/v2/util/log"
-	mnet "github.com/micro/go-micro/v2/util/net"
-	mls "github.com/micro/go-micro/v2/util/tls"
+	"github.com/micro/go-micro/v3"
+	"github.com/micro/go-micro/v3/api"
+	"github.com/micro/go-micro/v3/registry"
+	maddr "github.com/micro/go-micro/v3/util/addr"
+	mhttp "github.com/micro/go-micro/v3/util/http"
+	"github.com/micro/go-micro/v3/util/log"
+	mnet "github.com/micro/go-micro/v3/util/net"
+	mls "github.com/micro/go-micro/v3/util/tls"
 )
 
 type service struct {

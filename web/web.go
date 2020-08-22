@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/micro/go-micro/v2/api"
+	"github.com/micro/go-micro/v3/api"
 )
 
 // Service is a web service with service discovery built in

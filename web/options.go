@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/micro/cli/v2"
-	"github.com/micro/go-micro/v2"
-	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v3"
+	"github.com/micro/go-micro/v3/registry"
+	"github.com/micro/micro/v3/service"
 )
 
 type Options struct {
@@ -32,7 +33,7 @@ type Options struct {
 	Context context.Context
 
 	Registry registry.Registry
-	Service  micro.Service
+	Service  service.Service
 
 	Secure      bool
 	TLSConfig   *tls.Config
@@ -54,7 +55,7 @@ func newOptions(opts ...Option) Options {
 		RegisterTTL:      DefaultRegisterTTL,
 		RegisterInterval: DefaultRegisterInterval,
 		StaticDir:        DefaultStaticDir,
-		Service:          micro.NewService(),
+		Service:          service.NewService(),
 		Context:          context.TODO(),
 	}
 
@@ -157,7 +158,7 @@ func Server(srv *http.Server) Option {
 }
 
 // MicroService sets the micro.Service used internally
-func MicroService(s micro.Service) Option {
+func MicroService(s service.Service) Option {
 	return func(o *Options) {
 		o.Service = s
 	}
