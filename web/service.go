@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/micro/cli/v2"
-	"github.com/micro/go-micro/v3"
 	"github.com/micro/go-micro/v3/api"
 	"github.com/micro/go-micro/v3/registry"
 	maddr "github.com/micro/go-micro/v3/util/addr"
@@ -23,6 +22,8 @@ import (
 	"github.com/micro/go-micro/v3/util/log"
 	mnet "github.com/micro/go-micro/v3/util/net"
 	mls "github.com/micro/go-micro/v3/util/tls"
+	mService "github.com/micro/micro/v3/service"
+	microRegistry "github.com/micro/micro/v3/service/registry"
 )
 
 type service struct {
@@ -114,7 +115,8 @@ func (s *service) register() error {
 		return nil
 	}
 	// default to service registry
-	r := s.opts.Service.Client().Options().Registry
+	r := microRegistry.DefaultRegistry
+
 	// switch to option if specified
 	if s.opts.Registry != nil {
 		r = s.opts.Registry
@@ -132,7 +134,8 @@ func (s *service) deregister() error {
 		return nil
 	}
 	// default to service registry
-	r := s.opts.Service.Client().Options().Registry
+	r := microRegistry.DefaultRegistry
+
 	// switch to option if specified
 	if s.opts.Registry != nil {
 		r = s.opts.Registry
@@ -255,7 +258,8 @@ func (s *service) stop() error {
 
 func (s *service) Client() *http.Client {
 	rt := mhttp.NewRoundTripper(
-		mhttp.WithRegistry(registry.DefaultRegistry),
+		mhttp.WithRouter(s.opts.Router),
+		// mhttp.WithRegistry(registry.DefaultRegistry),
 	)
 	return &http.Client{
 		Transport: rt,
@@ -331,17 +335,18 @@ func (s *service) Init(opts ...Option) error {
 		o(&s.opts)
 	}
 
-	serviceOpts := []micro.Option{}
+	serviceOpts := []mService.Option{}
 
-	if len(s.opts.Flags) > 0 {
-		serviceOpts = append(serviceOpts, micro.Flags(s.opts.Flags...))
-	}
+	// if len(s.opts.Flags) > 0 {
+	// 	serviceOpts = append(serviceOpts, mService.Flags(s.opts.Flags...))
+	// }
+	//
+	// if s.opts.Registry != nil {
+	// 	serviceOpts = append(serviceOpts, mService.Registry(s.opts.Registry))
+	// }
 
-	if s.opts.Registry != nil {
-		serviceOpts = append(serviceOpts, micro.Registry(s.opts.Registry))
-	}
-
-	serviceOpts = append(serviceOpts, micro.Action(func(ctx *cli.Context) error {
+	serviceOpts = append(serviceOpts, mService.BeforeStart(func() error {
+		var ctx *cli.Context
 		if ttl := ctx.Int("register_ttl"); ttl > 0 {
 			s.opts.RegisterTTL = time.Duration(ttl) * time.Second
 		}
